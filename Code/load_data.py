@@ -1,43 +1,31 @@
-import glob
-import os
 import librosa
+import csv
 import numpy as np
 import librosa.display
 
 
-
-def load_sounds(path):
-    raw_sounds = []
-    sound_labels = []
+def load_data(path):
+    class_Ids = []
     sample_rates = []
-    for label in os.listdir(path):
-        subdir = (path + "/" + label)
+    x = 0
+    with open(path, 'r') as csvfile:
+        metadata = csv.DictReader(csvfile)
+        for row in metadata:
+            soundDir = "UrbanSound8K/audio/fold" + row['fold'] + "/" + row['slice_file_name']
+            soundClassId = row['classID']
+            print(x)
+            raw_sound, sample_rate = librosa.load(soundDir)
+            class_Ids.append(int(soundClassId))
+            sample_rates.append(sample_rate)
+            np.save("raw_data/" + str(x) + ".npy", raw_sound)
+            x += 1
 
-        sound_wav = glob.glob(subdir + "/" + '*.wav')
-        sound_mp3 = glob.glob(subdir + "/" + '*.mp3')
-        sounds = sound_mp3 + sound_wav
-        for sound in sounds:
-            print(sound)
-            try:
-                x, sample_rate = librosa.load(sound)
-                raw_sounds.append(x)
-                sample_rates.append(sample_rate)
-                sound_labels.append(label[1])
-            except:
-                continue
-
-    return raw_sounds, sample_rates,sound_labels
+    class_Ids = np.array(class_Ids)
+    sample_rates = np.array(sample_rates)
 
 
-rs, sr, sl = load_sounds("sounds")
-np.save("sample_rates.npy", sr)
-np.save("soundlabels.npy", sl)
+    np.save("raw_sounds_id.npy", class_Ids)
+    np.save("sample_rates.npy", sample_rates)
 
-output_raw = "raw_sounds/"
-for raw_ind in range(len(rs)):
-    print(raw_ind)
-    np.save(output_raw+str(raw_ind)+".npy", np.array(rs[raw_ind]))
-
-
-
+load_data("UrbanSound8K/metadata/UrbanSound8K.csv")
 
